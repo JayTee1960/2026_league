@@ -1,1 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badminton League Tracker - Fall 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .tabs { display: flex; background: #f8f9fa; border-bottom: 2px solid #e0e0e0; }
+        .tab { flex: 1; padding: 20px; text-align: center; cursor: pointer; font-weight: 600; transition: all 0.3s; border: none; background: transparent; font-size: 1em; }
+        .tab:hover { background: #e9ecef; }
+        .tab.active { background: white; color: #667eea; border-bottom: 3px solid #667eea; }
+        .tab-content { display: none; padding: 30px; }
+        .tab-content.active { display: block; }
+        .setup-section { background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #667eea; }
+        .setup-section h3 { color: #667eea; margin-bottom: 15px; }
+        .league-badge { padding: 10px 14px; border-radius: 8px; border-left: 4px solid #667eea; background: #eef1ff; font-size: 0.95em; }
+        .setup-note { font-size: 0.9em; color: #555; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
+        .form-group input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .players-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .players-grid .form-group { margin-bottom: 0; }
+        .late-sel { width: 100%; margin-top: 5px; padding: 6px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.85em; background: white; color: #555; }
+        .late-sel.is-late { border-color: #ffc107; background: #fff8e1; color: #333; font-weight: 600; }
+        .schedule-wrapper { background: white; padding: 20px; border-radius: 8px; border: 2px solid #667eea; }
+        .schedule-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+        .schedule-header h2 { margin: 0; font-size: 24px; color: #333; }
+        .schedule-header h3 { margin: 5px 0 0 0; font-size: 16px; color: #666; font-weight: normal; }
+        .teams-legend { margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+        .teams-legend h3 { margin: 0 0 10px 0; color: #333; font-size: 16px; }
+        .team-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .team-item { padding: 8px 10px; background: white; border-radius: 4px; border-left: 3px solid #667eea; font-size: 12px; }
+        .team-name { font-weight: bold; margin-bottom: 3px; color: #667eea; }
+        .players { font-size: 11px; color: #666; }
+        .games-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .rivalry-section { margin-bottom: 15px; }
+        .rivalry-title { background: #667eea; color: white; padding: 8px 12px; margin-bottom: 8px; font-weight: bold; font-size: 13px; border-radius: 4px; display: flex; justify-content: space-between; gap: 10px; }
+        .rivalry-title .rest { font-weight: normal; font-size: 11px; opacity: 0.9; text-align: right; }
+        .game-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid #ddd; background: white; font-size: 12px; border-radius: 4px; }
+        .game-row:hover { background: #f8f9fa; }
+        .game-info { flex: 1; display: flex; align-items: center; }
+        .game-number { font-weight: bold; margin-right: 10px; min-width: 60px; color: #333; }
+        .court-tag { font-weight: normal; font-size: 10px; color: #777; }
+        .matchup { font-size: 12px; }
+        .vs { margin: 0 8px; font-weight: bold; color: #666; }
+        .team { font-weight: 600; }
+        .score-section { display: flex; align-items: center; min-width: 100px; }
+        .score-label { font-size: 11px; color: #666; margin-right: 8px; font-weight: 500; }
+        .score-input { width: 35px; height: 28px; border: 2px solid #667eea; margin: 0 4px; text-align: center; font-size: 13px; border-radius: 4px; font-weight: 600; }
+        .score-input:focus { outline: none; border-color: #764ba2; background: #f0f4ff; }
+        .score-input.has-value { background: #e8f5e9; border-color: #28a745; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 1em; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-sm { padding: 8px 16px; font-size: 0.9em; }
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .results-section { margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #28a745; display: none; }
+        .results-section h3 { margin: 0 0 15px 0; color: #155724; }
+        .result-item { margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #28a745; }
+        .leaderboard { background: white; border-radius: 12px; }
+        .leaderboard-item { display: grid; grid-template-columns: 60px 1fr 90px 90px 90px 100px; padding: 12px 20px; border-bottom: 1px solid #e0e0e0; align-items: center; gap: 10px; }
+        .leaderboard-item:hover { background: #f8f9fa; }
+        .leaderboard-item.header { background: #667eea; color: white; font-weight: 600; border-radius: 12px 12px 0 0; }
+        .rank { font-size: 1.5em; font-weight: 700; color: #667eea; }
+        .leaderboard-item.header .rank { color: white; font-size: 1em; }
+        .rank.gold { color: #FFD700; }
+        .rank.silver { color: #C0C0C0; }
+        .rank.bronze { color: #CD7F32; }
+        .player-name { font-weight: 600; font-size: 1.1em; }
+        .leaderboard-item.header .player-name { font-size: 1em; }
+        .stat { text-align: center; font-weight: 600; }
+        .week-section { margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 12px; }
+        .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #667eea; }
+        .week-header h3 { color: #667eea; }
+        .week-actions { display: flex; gap: 10px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; }
+        .empty-state h3 { margin-bottom: 10px; }
+        .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .edit-mode { background: #fff3cd; border-left-color: #ffc107; }
+        .edit-mode .rivalry-title { background: #ffc107; color: #333; }
+        /* larger names, scores sit right next to each pair */
+        .game-row { justify-content: flex-start; gap: 14px; padding: 10px 14px; }
+        .game-number { min-width: 62px; margin-right: 0; font-size: 13px; }
+        .teamlines { display: grid; gap: 6px; flex: 1; min-width: 0; }
+        .tline { display: grid; grid-template-columns: minmax(0, 1fr) 64px; column-gap: 10px; align-items: center; max-width: 400px; }
+        .team { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+        .score-input { width: 64px; height: 40px; font-size: 18px; margin: 0; }
+        .adjust-panel { background: #fff8e1; border-left: 4px solid #ffc107; padding: 18px; border-radius: 12px; margin-bottom: 20px; }
+        .adjust-panel h3 { color: #8a6d00; margin-bottom: 8px; }
+        .adjust-panel .players-grid { margin: 12px 0; }
+        .adjust-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+        .adjust-row select { padding: 8px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; }
+        .adj-msg { margin-top: 12px; font-weight: 600; }
+        /* Live Board */
+        .board { display: none; position: fixed; inset: 0; z-index: 100; background: linear-gradient(135deg, #2b1f6b, #4b2a7b); color: #fff; overflow: auto; padding: 16px; }
+        .board.show { display: block; }
+        .bd-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: clamp(16px, 3vw, 26px); font-weight: 700; margin-bottom: 14px; }
+        .bd-round { font-size: clamp(30px, 6.5vw, 58px); font-weight: 800; }
+        .bd-courts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; margin-bottom: 14px; }
+        .bd-court { background: rgba(255,255,255,0.14); border-radius: 16px; padding: 18px; text-align: center; }
+        .bd-ct { font-size: clamp(14px, 2.4vw, 22px); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; margin-bottom: 8px; }
+        .bd-pair { font-size: clamp(24px, 5.5vw, 48px); font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+        .bd-vs { font-size: clamp(14px, 2.5vw, 22px); opacity: 0.7; margin: 6px 0; }
+        .bd-rest, .bd-late { background: rgba(255,255,255,0.12); border-radius: 12px; padding: 12px 16px; font-size: clamp(16px, 3vw, 26px); margin-bottom: 10px; }
+        .bd-late { background: rgba(255,193,7,0.28); }
+        .bd-next { margin-top: 16px; padding: 14px 16px; border-radius: 12px; border: 2px dashed rgba(255,255,255,0.4); }
+        .bd-next h3 { font-size: clamp(16px, 3vw, 24px); margin-bottom: 8px; }
+        .bd-next div { font-size: clamp(15px, 2.8vw, 24px); margin-bottom: 4px; }
+        .bd-controls { position: sticky; bottom: 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 14px 0 calc(6px + env(safe-area-inset-bottom, 0px)); margin-top: 14px; background: linear-gradient(rgba(59,36,114,0), #3b2472 45%); }
+        .bd-controls .btn { font-size: clamp(15px, 3vw, 22px); padding: 14px 24px; }
+        @media (max-width: 700px) { .players-grid { grid-template-columns: repeat(2, 1fr); } .games-container { grid-template-columns: 1fr; } .tline { max-width: none; } .team { font-size: 17px; } .team-list { grid-template-columns: repeat(2, 1fr); } }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border-radius: 0; }
+            .header, .tabs, .action-buttons, .export-buttons, .week-actions, .results-section, .teams-legend { display: none !important; }
+            .tab-content { display: block !important; padding: 0; }
+            .tab-content:not(.active) { display: none !important; }
+            .schedule-wrapper { border: none; padding: 0; }
+            .schedule-header { margin-bottom: 8px; padding-bottom: 6px; }
+            .schedule-header h2 { font-size: 18px !important; }
+            .schedule-header h3 { font-size: 12px !important; }
+            .games-container { grid-template-columns: 1fr 1fr !important; gap: 16px; }
+            .rivalry-section { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid; }
+            .score-input { width: 46px !important; height: 32px !important; border: 2px solid #000 !important; font-size: 16px !important; background: white !important; font-weight: bold !important; }
+            .game-row { padding: 5px 8px; margin-bottom: 4px; }
+            .score-section { min-width: 110px; }
+            .matchup { font-size: 13px !important; }
+            .team { font-size: 13px !important; font-weight: 700 !important; }
+            .game-number { font-size: 13px !important; min-width: 52px; }
+            .rivalry-title { font-size: 13px !important; padding: 5px 10px !important; margin-bottom: 4px; background: #ddd !important; color: #000 !important; }
+            .rivalry-title .rest { color: #000; }
+            .adjust-panel, .board { display: none !important; }
+            .game-row { display: flex !important; align-items: center; gap: 8px; }
+            .teamlines { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+            .tline { display: flex !important; align-items: center; gap: 5px; max-width: none; }
+            .tline + .tline::before { content: 'vs'; font-weight: bold; color: #555; margin-right: 3px; }
+            .team { font-size: 15px !important; font-weight: 700 !important; }
+            .score-input { width: 44px !important; height: 30px !important; font-size: 15px !important; }
+            @page { size: landscape; margin: 0.4in; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏸 Badminton League Tracker</h1>
+            <p>Fall 2026 Season | Oct 14 - Dec 31, 2026 | Wednesday &amp; Friday leagues</p>
+        </div>
 
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('setup')">Setup Night</button>
+            <button class="tab" onclick="switchTab('record')">Record Scores</button>
+            <button class="tab" onclick="switchTab('wed')">Wednesday League</button>
+            <button class="tab" onclick="switchTab('fri')">Friday League</button>
+        </div>
+
+        <div id="setup" class="tab-content active">
+            <h2 style="margin-bottom: 20px;" id="setupTitle">Setup Game Night</h2>
+            <div class="setup-section">
+                <h3>📅 Date</h3>
+                <div class="form-group"><label>Select Date:</label><input type="date" id="fridayDate" onchange="updBadge()"></div>
+                <div id="leagueBadge" class="league-badge"></div>
+            </div>
+            <div class="setup-section">
+                <h3>🏟️ Courts</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group"><label>Court 1:</label><input type="text" id="court1" value="Court 1"></div>
+                    <div class="form-group"><label>Court 2:</label><input type="text" id="court2" value="Court 2"></div>
+                </div>
+            </div>
+            <div class="setup-section">
+                <h3>👥 Players (12)</h3>
+                <p class="setup-note">Enter the 12 players. If someone always arrives late, set their arrival under their name: they sit out the early rounds and still play 6 games. The latest possible arrival is after Round 3. Partners are drawn at random: 9 rounds, 2 courts, 18 games, and everyone plays exactly 6 games (resting 3).</p>
+                <div class="players-grid" id="playersGrid" onchange="markLate()"></div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="genSched()">🏸 Generate Schedule</button>
+        </div>
+
+        <div id="record" class="tab-content">
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="switchTab('setup')">← Back</button>
+                <button class="btn btn-primary" onclick="openBoard()">📺 Live Board</button>
+                <button class="btn btn-info" onclick="window.print()">🖨️ Print</button>
+                <button class="btn btn-warning" onclick="toggleAdjust()">🔀 Adjust Arrivals</button>
+                <button class="btn btn-success" onclick="calcResults()">🏆 Calculate Results</button>
+                <button class="btn btn-danger" onclick="clearScores()">🗑️ Clear</button>
+                <button class="btn btn-primary" onclick="saveWeek()">💾 Save Week</button>
+            </div>
+            <div id="adjustPanel" class="adjust-panel" hidden>
+                <h3>🔀 Change arrivals mid-night</h3>
+                <p class="setup-note" style="margin-bottom:0">Rounds before the one you pick stay exactly as they are, with their scores. Rounds from there on are redrawn using each player's arrival round and how many games they have already played.</p>
+                <div id="adjustBody"></div>
+                <div id="adjMsg" class="adj-msg"></div>
+            </div>
+            <div id="schedCont"><div class="empty-state"><h3>No schedule yet</h3><p>Enter the 12 players first!</p></div></div>
+            <div id="resultsSection" class="results-section"></div>
+        </div>
+
+        <div id="wed" class="tab-content"></div>
+
+        <div id="fri" class="tab-content"></div>
+    </div>
+
+    <div id="board" class="board"></div>
+
+    <script>
+        var data={weeks:[],players:{}},curr=null,editIdx=null;
+        var TABS=['setup','record','wed','fri'];
+        function load(){var s=localStorage.getItem('bmt26');if(s){try{data=JSON.parse(s);}catch(e){}}data.weeks=data.weeks||[];data.weeks.forEach(function(w){if(!w.league)w.league=lgOf(w.date)||'fri';});recalc();renderAll();}
+        function save(){localStorage.setItem('bmt26',JSON.stringify({weeks:data.weeks}));}
+        function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+        var LG={wed:{name:'Wednesday',dow:3},fri:{name:'Friday',dow:5}};
+        function lgOf(d){var w=new Date(d+'T00:00:00').getDay();return w===3?'wed':w===5?'fri':null;}
+        function isoLocal(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+        (function(){var d=new Date();while(d.getDay()!==3&&d.getDay()!==5)d.setDate(d.getDate()+1);document.getElementById('fridayDate').value=isoLocal(d);})();
+        function updBadge(){var d=document.getElementById('fridayDate').value,b=document.getElementById('leagueBadge'),lg=d?lgOf(d):null;
+            if(lg){b.innerHTML='&#9989; <strong>'+LG[lg].name+' League</strong>. Scores for this night are saved to the '+LG[lg].name+' tab.';b.style.background='#e8f5e9';b.style.borderLeftColor='#28a745';}
+            else{b.innerHTML='&#9888;&#65039; That date is not a Wednesday or Friday. Pick a league night.';b.style.background='#fff3cd';b.style.borderLeftColor='#ffc107';}
+            document.getElementById('setupTitle').textContent=lg?'Setup '+LG[lg].name+' Night':'Setup Game Night';}
+
+        /* ---- player inputs (12 individual names, remembered between sessions) ---- */
+        (function buildPlayerInputs(){
+            var saved=[];try{saved=JSON.parse(localStorage.getItem('bmt26_players')||'[]');}catch(e){}
+            var opts='<option value="1">On time</option><option value="2">Arrives after Rd 1 (~'+clk(1)+')</option><option value="3">Arrives after Rd 2 (~'+clk(2)+')</option><option value="4">Arrives after Rd 3 (~'+clk(3)+')</option>';
+            var h='';for(var i=1;i<=12;i++)h+='<div class="form-group"><label>Player '+i+':</label><input type="text" id="pl'+i+'" placeholder="Player '+i+'" value="'+esc(saved[i-1]||'')+'"><select id="lt'+i+'" class="late-sel" title="When does this player arrive?">'+opts+'</select></div>';
+            document.getElementById('playersGrid').innerHTML=h;
+        })();
+        function markLate(){for(var i=1;i<=12;i++){var e=document.getElementById('lt'+i);e.classList.toggle('is-late',e.value!=='1');}}
+        function getStarts(){var st={};for(var i=1;i<=12;i++){var n=document.getElementById('pl'+i).value.trim();if(n)st[n]=parseInt(document.getElementById('lt'+i).value);}return st;}
+        function setStarts(pl,late){for(var i=1;i<=12;i++){document.getElementById('lt'+i).value=String((late&&late[pl[i-1]])||1);}markLate();}
+        function getPlayers(){var p=[];for(var i=1;i<=12;i++)p.push(document.getElementById('pl'+i).value.trim());return p;}
+
+        /* ---- random partner scheduler: 12 players, 9 rounds, 2 courts, 6 games each ---- */
+        function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+        function buildOnce(pl,st,locked,strict){
+            var pc={},oc={},need={},last={},rounds=locked.slice(),cost=0,OPP=[[0,2],[0,3],[1,2],[1,3]];
+            function key(a,b){return a<b?a+'|'+b:b+'|'+a;}
+            function addG(g){pc[key(g[0],g[1])]=(pc[key(g[0],g[1])]||0)+1;pc[key(g[2],g[3])]=(pc[key(g[2],g[3])]||0)+1;OPP.forEach(function(q){var k=key(g[q[0]],g[q[1]]);oc[k]=(oc[k]||0)+1;});}
+            pl.forEach(function(p){last[p]=-9;need[p]=6;});
+            locked.forEach(function(rd,ri){rd.games.forEach(function(g){var a=[g.a[0],g.a[1],g.b[0],g.b[1]];a.forEach(function(p){need[p]--;});addG(a);});rd.rest.forEach(function(p){last[p]=ri;});});
+            for(var r=locked.length;r<9;r++){
+                var elig=pl.filter(function(p){return (st[p]||1)-1<=r;}),late=pl.filter(function(p){return (st[p]||1)-1>r;});
+                if(elig.length<8)return null;
+                var order=shuffle(elig.slice()).sort(function(a,b){var sa=(9-r)-need[a],sb=(9-r)-need[b];return (sa-sb)||(need[b]-need[a])||((last[b]===r-1?1:0)-(last[a]===r-1?1:0));});
+                var play=order.slice(0,8),rest=order.slice(8);
+                if(strict){
+                    for(var i=0;i<8;i++)if(need[play[i]]<=0)return null;
+                    for(var i=0;i<rest.length;i++)if((9-r-1)-need[rest[i]]<0)return null;
+                }
+                play.forEach(function(p){need[p]--;});rest.forEach(function(p){last[p]=r;});
+                var best=null,bc=1e9;
+                for(var t=0;t<250;t++){
+                    var s=shuffle(play.slice()),c=0,gs=[[s[0],s[1],s[2],s[3]],[s[4],s[5],s[6],s[7]]];
+                    gs.forEach(function(g){c+=(pc[key(g[0],g[1])]||0)*10+(pc[key(g[2],g[3])]||0)*10;OPP.forEach(function(q){c+=(oc[key(g[q[0]],g[q[1]])]||0);});});
+                    if(c<bc){bc=c;best=gs;if(c===0)break;}
+                }
+                cost+=bc;best.forEach(addG);
+                rounds.push({rest:rest,late:late,games:best.map(function(g){return {a:[g[0],g[1]],b:[g[2],g[3]]};})});
+            }
+            for(var i=0;i<pl.length;i++){if(strict&&need[pl[i]]!==0)return null;cost+=1000*Math.abs(need[pl[i]]);}
+            return {rounds:rounds,cost:cost};
+        }
+        function makeSchedule(pl,st,locked,strict){locked=locked||[];var best=null;for(var i=0;i<400;i++){var s=buildOnce(pl,st,locked,strict);if(s&&(!best||s.cost<best.cost))best=s;if(best&&best.cost<=0)break;}return best?best.rounds:null;}
+
+        var adjMsg='';
+        function firstOpenRound(){if(!curr)return 0;for(var r=0;r<curr.rounds.length;r++){var any=false;for(var g=0;g<2;g++){var a=document.getElementById('g'+(r*2+g+1)+'s1'),b=document.getElementById('g'+(r*2+g+1)+'s2');if((a&&a.value!=='')||(b&&b.value!==''))any=true;}if(!any)return r;}return curr.rounds.length;}
+        function toggleAdjust(){var pn=document.getElementById('adjustPanel');if(!curr){alert('Generate a schedule first!');return;}pn.hidden=!pn.hidden;if(!pn.hidden){adjMsg='';buildAdjust();pn.scrollIntoView({behavior:'smooth',block:'nearest'});}}
+        function buildAdjust(){
+            var body=document.getElementById('adjustBody');if(!body)return;
+            if(!curr){body.innerHTML='';return;}
+            var fo=Math.min(firstOpenRound()+1,9),h='<div class="adjust-row"><label for="adjFrom"><strong>Redraw from:</strong></label><select id="adjFrom">',opts='';
+            for(var k=1;k<=9;k++)h+='<option value="'+k+'"'+(k===fo?' selected':'')+'>Round '+k+' (~'+clk(k-1)+')</option>';
+            h+='</select></div><div class="players-grid">';
+            for(var k=1;k<=9;k++)opts+='<option value="__'+k+'">Round '+k+' (~'+clk(k-1)+')</option>';
+            for(var i=0;i<curr.players.length;i++){var cur=(curr.late&&curr.late[curr.players[i]])||1;h+='<div class="form-group"><label>'+esc(curr.players[i])+'</label><select id="adj'+i+'" class="late-sel">'+opts.replace('value="__'+cur+'"','value="__'+cur+'" selected').replace(/value="__/g,'value="')+'</select></div>';}
+            h+='</div><button class="btn btn-warning" onclick="applyAdjust()">Redraw remaining rounds</button>';
+            body.innerHTML=h;
+            document.getElementById('adjMsg').textContent=adjMsg;
+        }
+        function applyAdjust(){
+            if(!curr)return;
+            var from=parseInt(document.getElementById('adjFrom').value)-1,st={};
+            curr.players.forEach(function(p,i){st[p]=parseInt(document.getElementById('adj'+i).value);});
+            var ex=[];for(var i=1;i<=curr.matches.length;i++){var a=document.getElementById('g'+i+'s1'),b=document.getElementById('g'+i+'s2');if(a&&b&&a.value!==''&&b.value!=='')ex.push({gameNumber:i,score1:parseInt(a.value),score2:parseInt(b.value)});}
+            var lost=ex.filter(function(e){return e.gameNumber>from*2;}).length;
+            if(lost&&!confirm('Scores already entered from Round '+(from+1)+' on ('+lost+' game'+(lost===1?'':'s')+') will be cleared. Continue?'))return;
+            var rounds=makeSchedule(curr.players,st,curr.rounds.slice(0,from),false);
+            if(!rounds){document.getElementById('adjMsg').textContent='Could not redraw: at least 8 players must be present in every remaining round.';return;}
+            ex=ex.filter(function(e){return e.gameNumber<=from*2;});
+            curr.rounds=rounds;curr.late=st;
+            var gp={};rounds.forEach(function(r){r.games.forEach(function(g){g.a.concat(g.b).forEach(function(p){gp[p]=(gp[p]||0)+1;});});});
+            var off=curr.players.filter(function(p){return (gp[p]||0)!==6;}).map(function(p){return p+': '+(gp[p]||0);});
+            adjMsg=off.length?'Redrawn from Round '+(from+1)+'. Games per player that are not 6: '+off.join(', ')+'.':'Redrawn from Round '+(from+1)+'. Everyone still plays 6 games.';
+            dispSched(curr.date,curr.court1,curr.court2,curr.players,rounds,ex);
+        }
+
+        /* ---- keep the night in progress on this device (survives refresh / phone sleep) ---- */
+        function saveCurr(){
+            try{
+                if(!curr){localStorage.removeItem('bmt26_curr');return;}
+                var scores={};for(var i=1;i<=18;i++){var a=document.getElementById('g'+i+'s1'),b=document.getElementById('g'+i+'s2');if(a&&b&&(a.value!==''||b.value!==''))scores[i]={s1:a.value,s2:b.value};}
+                localStorage.setItem('bmt26_curr',JSON.stringify({c:curr,scores:scores,editIdx:editIdx}));
+            }catch(e){}
+        }
+        function restoreCurr(){
+            try{
+                var s=localStorage.getItem('bmt26_curr');if(!s)return;
+                var o=JSON.parse(s);if(!o||!o.c||!o.c.rounds)return;
+                curr=o.c;curr.matches=[];editIdx=(o.editIdx==null)?null:o.editIdx;
+                var ex=[];Object.keys(o.scores||{}).forEach(function(k){ex.push({gameNumber:+k,score1:o.scores[k].s1,score2:o.scores[k].s2});});
+                dispSched(curr.date,curr.court1,curr.court2,curr.players,curr.rounds,ex);
+                switchTab('record');
+            }catch(e){}
+        }
+        document.addEventListener('change',function(e){if(e.target&&/^g\d+s[12]$/.test(e.target.id))saveCurr();});
+
+        /* ---- Live Board: big-text view of the current and next round ---- */
+        var wakeLock=null;
+        function openBoard(){
+            if(!curr){alert('Generate a schedule first!');return;}
+            if(curr.liveRound==null||curr.liveRound>=curr.rounds.length)curr.liveRound=0;
+            renderBoard();document.getElementById('board').classList.add('show');
+            try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(l){wakeLock=l;},function(){});}catch(e){}
+        }
+        function closeBoard(){document.getElementById('board').classList.remove('show');try{if(wakeLock){wakeLock.release();wakeLock=null;}}catch(e){}}
+        function boardMove(d){var n=curr.liveRound+d;if(n<0||n>=curr.rounds.length)return;curr.liveRound=n;saveCurr();renderBoard();}
+        function boardAdjust(){closeBoard();var pn=document.getElementById('adjustPanel');if(pn.hidden)toggleAdjust();else pn.scrollIntoView({behavior:'smooth',block:'nearest'});}
+        function renderBoard(){
+            var r=curr.liveRound,rd=curr.rounds[r],nx=curr.rounds[r+1],c1=curr.court1,c2=curr.court2,total=curr.rounds.length;
+            var h='<div class="bd-top"><div>'+LG[curr.league].name+' League · '+new Date(curr.date+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div><div>~'+clk(r)+'</div></div>';
+            h+='<div class="bd-round" style="margin-bottom:14px">Round '+(r+1)+' of '+total+'</div><div class="bd-courts">';
+            rd.games.forEach(function(g,i){h+='<div class="bd-court"><div class="bd-ct">'+esc(i===0?c1:c2)+'</div><div class="bd-pair">'+esc(g.a[0])+' &amp; '+esc(g.a[1])+'</div><div class="bd-vs">vs</div><div class="bd-pair">'+esc(g.b[0])+' &amp; '+esc(g.b[1])+'</div></div>';});
+            h+='</div>';
+            if(rd.rest.length)h+='<div class="bd-rest"><b>Resting:</b> '+rd.rest.map(esc).join(', ')+'</div>';
+            if(rd.late&&rd.late.length)h+='<div class="bd-late"><b>Arriving:</b> '+rd.late.map(function(p){var k=(curr.late&&curr.late[p])||1;return esc(p)+' (Round '+k+', ~'+clk(k-1)+')';}).join(', ')+'</div>';
+            if(nx){
+                h+='<div class="bd-next"><h3>Up next · Round '+(r+2)+' (~'+clk(r+1)+')</h3>';
+                nx.games.forEach(function(g,i){h+='<div><b>'+esc(i===0?c1:c2)+':</b> '+esc(g.a[0])+' &amp; '+esc(g.a[1])+' vs '+esc(g.b[0])+' &amp; '+esc(g.b[1])+'</div>';});
+                if(nx.rest.length)h+='<div><b>Resting:</b> '+nx.rest.map(esc).join(', ')+'</div>';
+                h+='</div>';
+            }else h+='<div class="bd-next"><h3>Last round of the night</h3></div>';
+            h+='<div class="bd-controls"><button class="btn btn-secondary" onclick="boardMove(-1)"'+(r===0?' disabled':'')+'>◀ Back</button><button class="btn btn-success" onclick="boardMove(1)"'+(r>=total-1?' disabled':'')+'>Next Round ▶</button><button class="btn btn-warning" onclick="boardAdjust()">🔀 Adjust</button><button class="btn btn-danger" onclick="closeBoard()">✕ Close</button></div>';
+            document.getElementById('board').innerHTML=h;
+        }
+        function clk(r){var m=19*60+r*13,h=Math.floor(m/60),mm=m%60;return (h>12?h-12:h)+':'+(mm<10?'0':'')+mm+' pm';}
+
+        function switchTab(n){var t=document.querySelectorAll('.tab-content');for(var i=0;i<t.length;i++)t[i].classList.remove('active');var b=document.querySelectorAll('.tab');for(var i=0;i<b.length;i++)b[i].classList.remove('active');document.getElementById(n).classList.add('active');b[TABS.indexOf(n)].classList.add('active');}
+
+        function genSched(){
+            var d=document.getElementById('fridayDate').value;if(!d){alert('Select date!');return;}
+            var lg=lgOf(d);if(!lg){alert('That date is not a Wednesday or Friday. Pick a league night.');return;}
+            var c1=document.getElementById('court1').value||'Court 1',c2=document.getElementById('court2').value||'Court 2',pl=getPlayers();
+            for(var i=0;i<12;i++)if(!pl[i]){alert('Enter Player '+(i+1)+'!');return;}
+            var seen={};for(var i=0;i<12;i++){var k=pl[i].toLowerCase();if(seen[k]){alert('Duplicate name: '+pl[i]);return;}seen[k]=1;}
+            try{localStorage.setItem('bmt26_players',JSON.stringify(pl));}catch(e){}
+            var st=getStarts(),rounds=makeSchedule(pl,st,[],true);
+            if(!rounds){alert('Could not build a schedule with those arrival times. Each round needs at least 8 players present, so no more than 4 players can be late.');return;}
+            curr={league:lg,date:d,court1:c1,court2:c2,players:pl,late:st,rounds:rounds,matches:[]};editIdx=null;
+            dispSched(d,c1,c2,pl,rounds,null);switchTab('record');
+        }
+        function dispSched(d,c1,c2,pl,rounds,ex){
+            var c=document.getElementById('schedCont'),gn=1,lc='',rc='',am=[];
+            function findEx(n){if(!ex)return null;for(var i=0;i<ex.length;i++)if(ex[i].gameNumber===n)return ex[i];return null;}
+            for(var r=0;r<rounds.length;r++){
+                var rd=rounds[r],rh='<div class="rivalry-section'+(editIdx!==null?' edit-mode':'')+'"><div class="rivalry-title"><span>Round '+(r+1)+' · '+clk(r)+'</span><span class="rest">'+(rd.rest.length?'Rest: '+rd.rest.map(esc).join(', '):'')+(rd.late&&rd.late.length?(rd.rest.length?' | ':'')+'Not here yet: '+rd.late.map(esc).join(', '):'')+'</span></div>';
+                for(var g=0;g<rd.games.length;g++){
+                    var court=g===0?c1:c2,mt={t1p:rd.games[g].a,t2p:rd.games[g].b,round:r+1,court:court};am.push(mt);
+                    var e=findEx(gn),s1=e?e.score1:'',s2=e?e.score2:'';
+                    function inp(id,v){return '<input type="number" inputmode="numeric" id="'+id+'" class="score-input'+(v!==''?' has-value':'')+'" min="0" max="99" placeholder="0" value="'+v+'" onchange="this.classList.toggle(\'has-value\',this.value!==\'\')">';}
+                    rh+='<div class="game-row"><div class="game-number">Game '+gn+'<div class="court-tag">'+esc(court)+'</div></div><div class="teamlines"><div class="tline"><span class="team">'+esc(mt.t1p[0])+' &amp; '+esc(mt.t1p[1])+'</span>'+inp('g'+gn+'s1',s1)+'</div><div class="tline"><span class="team">'+esc(mt.t2p[0])+' &amp; '+esc(mt.t2p[1])+'</span>'+inp('g'+gn+'s2',s2)+'</div></div></div>';
+                    gn++;
+                }
+                rh+='</div>';
+                if(r<5)lc+=rh;else rc+=rh;
+            }
+            curr.matches=am;
+            var dt=new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+                eb=editIdx!==null?'<div style="background:#fff3cd;padding:15px;margin-bottom:20px;border-radius:8px;border-left:4px solid #ffc107;"><strong>⚠️ EDIT MODE</strong></div>':'',
+                h=eb+'<div class="schedule-wrapper"><div class="schedule-header"><h2>🏸 '+dt+'</h2><h3>'+LG[curr.league].name+' League · 18-Game Schedule · everyone plays 6</h3></div><div class="teams-legend"><h3>👥 Players</h3><div class="team-list">';
+            for(var t=0;t<pl.length;t++)h+='<div class="team-item"><div class="team-name">'+esc(pl[t])+'</div></div>';
+            h+='</div></div><div class="games-container"><div class="left-column">'+lc+'</div><div class="right-column">'+rc+'</div></div></div>';
+            c.innerHTML=h;
+            saveCurr();
+            buildAdjust();
+        }
+        function calcResults(){
+            if(!curr){alert('Generate schedule first!');return;}
+            var pInd={},pStats={},cnt=0;
+            function ind(n){return pInd[n]||(pInd[n]={pts:0,pa:0,gp:0,w:0});}
+            for(var i=0;i<curr.matches.length;i++){
+                var gn=i+1,s1i=document.getElementById('g'+gn+'s1'),s2i=document.getElementById('g'+gn+'s2');
+                if(s1i&&s2i&&s1i.value&&s2i.value){
+                    var s1=parseInt(s1i.value),s2=parseInt(s2i.value),mt=curr.matches[i];
+                    mt.t1p.forEach(function(n){var p=ind(n);p.pts+=s1;p.pa+=s2;p.gp++;if(s1>s2)p.w++;});
+                    mt.t2p.forEach(function(n){var p=ind(n);p.pts+=s2;p.pa+=s1;p.gp++;if(s2>s1)p.w++;});
+                    var p1=mt.t1p.slice().sort().join(' & '),p2=mt.t2p.slice().sort().join(' & ');
+                    if(!pStats[p1])pStats[p1]={wins:0,losses:0,ptsFor:0,ptsAgainst:0};
+                    if(!pStats[p2])pStats[p2]={wins:0,losses:0,ptsFor:0,ptsAgainst:0};
+                    pStats[p1].ptsFor+=s1;pStats[p1].ptsAgainst+=s2;pStats[p2].ptsFor+=s2;pStats[p2].ptsAgainst+=s1;
+                    if(s1>s2){pStats[p1].wins++;pStats[p2].losses++;}else if(s2>s1){pStats[p2].wins++;pStats[p1].losses++;}
+                    cnt++;
+                }
+            }
+            if(cnt===0){alert('Enter scores first!');return;}
+            var iRes=Object.keys(pInd).map(function(n){var p=pInd[n];return{name:n,pts:p.pts,pa:p.pa,gp:p.gp,w:p.w,diff:p.pts-p.pa};}).sort(function(a,b){return b.pts-a.pts||b.w-a.w||b.diff-a.diff;}),
+                pRes=Object.keys(pStats).map(function(k){var e=pStats[k];return{pair:k,wins:e.wins,losses:e.losses,ptsFor:e.ptsFor,ptsAgainst:e.ptsAgainst,diff:e.ptsFor-e.ptsAgainst};}).sort(function(a,b){return b.wins-a.wins||b.diff-a.diff;}),
+                bp=pRes.filter(function(p){return p.wins>0;}).slice(0,3),
+                dp=pRes.filter(function(p){return p.ptsAgainst>0;}).sort(function(a,b){return a.ptsAgainst-b.ptsAgainst;}).slice(0,2);
+            var h='<h3>🏆 This Week\'s Results</h3>';
+            h+='<div class="result-item"><strong>📊 Games Completed:</strong> '+cnt+' of 18</div>';
+            h+='<div class="result-item"><strong>🏆 Top Scorer:</strong> '+esc(iRes[0].name)+' ('+iRes[0].pts+' pts, '+iRes[0].w+'W of '+iRes[0].gp+' games)</div>';
+            h+='<div class="result-item"><strong>📊 Player Standings:</strong><br>';
+            for(var i=0;i<iRes.length;i++)h+=(i+1)+'. '+esc(iRes[i].name)+': '+iRes[i].pts+' pts, '+iRes[i].w+'W-'+(iRes[i].gp-iRes[i].w)+'L, '+(iRes[i].diff>0?'+':'')+iRes[i].diff+' diff<br>';
+            h+='</div>';
+            if(bp.length>0){h+='<div class="result-item"><strong>⭐ Best Pairs (Most Wins):</strong><br>';for(var i=0;i<bp.length;i++)h+=(i+1)+'. '+esc(bp[i].pair)+': '+bp[i].wins+'W-'+bp[i].losses+'L, '+(bp[i].diff>0?'+':'')+bp[i].diff+' diff<br>';h+='</div>';}
+            if(dp.length>0){h+='<div class="result-item"><strong>🎯 Best Defense (Fewest Points Against):</strong><br>';for(var i=0;i<dp.length;i++)h+=(i+1)+'. '+esc(dp[i].pair)+': '+dp[i].ptsAgainst+' pts against<br>';h+='</div>';}
+            document.getElementById('resultsSection').innerHTML=h;document.getElementById('resultsSection').style.display='block';document.getElementById('resultsSection').scrollIntoView({behavior:'smooth',block:'nearest'});
+        }
+        function clearScores(){if(confirm('Clear all scores?')){for(var i=1;i<=18;i++){var s1=document.getElementById('g'+i+'s1'),s2=document.getElementById('g'+i+'s2');if(s1&&s2){s1.value='';s2.value='';s1.classList.remove('has-value');s2.classList.remove('has-value');}}document.getElementById('resultsSection').style.display='none';saveCurr();}}
+        function editWeek(wi){
+            var w=data.weeks[wi];
+            if(!w.rounds||!w.players){alert('This week was saved with the old team format and cannot be edited.');return;}
+            document.getElementById('fridayDate').value=w.date;document.getElementById('court1').value=w.court1;document.getElementById('court2').value=w.court2;updBadge();
+            for(var i=0;i<12;i++)document.getElementById('pl'+(i+1)).value=w.players[i]||'';setStarts(w.players,w.late);
+            curr={league:w.league,late:w.late||{},date:w.date,court1:w.court1,court2:w.court2,players:w.players,rounds:w.rounds,matches:[]};editIdx=wi;
+            dispSched(w.date,w.court1,w.court2,w.players,w.rounds,w.matches);switchTab('record');
+        }
+        function delWeek(wi){if(confirm('Delete week?')){data.weeks.splice(wi,1);recalc();save();renderAll();alert('✅ Deleted!');}}
+        function recalc(){data.pl={wed:{},fri:{}};for(var w=0;w<data.weeks.length;w++){var wk=data.weeks[w];for(var m=0;m<wk.matches.length;m++){var mt=wk.matches[m];updPS(wk.league,mt.t1p[0],mt.score1,mt.score2);updPS(wk.league,mt.t1p[1],mt.score1,mt.score2);updPS(wk.league,mt.t2p[0],mt.score2,mt.score1);updPS(wk.league,mt.t2p[1],mt.score2,mt.score1);}}}
+        function saveWeek(){
+            if(!curr){alert('Generate schedule first!');return;}
+            var wm=[],cnt=0;
+            for(var i=0;i<curr.matches.length;i++){var mt=curr.matches[i],gn=i+1,s1i=document.getElementById('g'+gn+'s1'),s2i=document.getElementById('g'+gn+'s2');if(s1i&&s2i&&s1i.value&&s2i.value){var s1=parseInt(s1i.value),s2=parseInt(s2i.value);wm.push({gameNumber:gn,t1p:mt.t1p,t2p:mt.t2p,score1:s1,score2:s2,winner:s1>s2?'team1':'team2'});cnt++;}}
+            if(cnt===0){alert('Enter scores!');return;}
+            var lg=curr.league,wk={league:lg,date:curr.date,court1:curr.court1,court2:curr.court2,players:curr.players,late:curr.late,rounds:curr.rounds,matches:wm};
+            if(editIdx!==null){data.weeks[editIdx]=wk;alert('✅ Updated!');editIdx=null;}else{data.weeks.push(wk);alert('✅ Saved to the '+LG[lg].name+' league!');}
+            recalc();save();curr=null;saveCurr();renderAll();switchTab(lg);
+        }
+        function updPS(lg,n,ts,os){var P=data.pl[lg];if(!P[n])P[n]={matches:0,wins:0,points:0};P[n].matches++;P[n].points+=ts;if(ts>os)P[n].wins++;}
+        function renderAll(){renderLeague('wed');renderLeague('fri');}
+        function lbHead(){return '<div class="leaderboard-item header"><div class="rank">Rank</div><div class="player-name">Player</div><div class="stat">Matches</div><div class="stat">Wins</div><div class="stat">Points</div><div class="stat">Pts/Match</div></div>';}
+        function renderLeague(lg){
+            var el=document.getElementById(lg),L=LG[lg],P=data.pl[lg],sp=Object.keys(P).map(function(k){return[k,P[k]];}).sort(function(a,b){return b[1].points-a[1].points||b[1].wins-a[1].wins;}),h='';
+            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><h2>🏆 '+L.name+' Leaderboard</h2><div class="export-buttons"><button class="btn btn-success" onclick="exportCSV(\''+lg+'\')">📊 CSV</button><button class="btn btn-secondary" onclick="copyClip(\''+lg+'\')">📋 Copy</button></div></div>';
+            h+='<div class="leaderboard">'+lbHead();
+            if(!sp.length)h+='<div class="empty-state"><h3>No '+L.name+' data yet</h3></div>';
+            for(var i=0;i<sp.length;i++){var n=sp[i][0],s=sp[i][1],r=i+1,rc=r===1?'gold':r===2?'silver':r===3?'bronze':'';h+='<div class="leaderboard-item"><div class="rank '+rc+'">'+r+'</div><div class="player-name">'+esc(n)+'</div><div class="stat">'+s.matches+'</div><div class="stat">'+s.wins+'</div><div class="stat">'+s.points+'</div><div class="stat">'+(s.points/s.matches).toFixed(1)+'</div></div>';}
+            h+='</div><h2 style="margin:30px 0 20px;">📅 '+L.name+' History</h2>';
+            var sw=[];data.weeks.forEach(function(w,i){if(w.league===lg)sw.push({week:w,idx:i});});
+            sw.sort(function(a,b){return new Date(b.week.date)-new Date(a.week.date);});
+            if(!sw.length)h+='<div class="empty-state"><h3>No '+L.name+' history</h3></div>';
+            for(var w=0;w<sw.length;w++){var wk=sw[w].week,oi=sw[w].idx,dt=new Date(wk.date+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}),who=wk.players?wk.players.map(esc).join(', '):(wk.teams||[]).map(function(t){return esc(t.name);}).join(', ');
+                h+='<div class="week-section"><div class="week-header"><h3>Week '+(sw.length-w)+' - '+dt+'</h3><div class="week-actions"><button class="btn btn-warning btn-sm" onclick="editWeek('+oi+')">✏️ Edit</button><button class="btn btn-danger btn-sm" onclick="delWeek('+oi+')">🗑️ Delete</button></div></div><p><strong>Players:</strong> '+who+'</p><p><strong>Matches:</strong> '+wk.matches.length+' of 18</p></div>';}
+            el.innerHTML=h;
+        }
+        function exportCSV(lg){var P=data.pl[lg];if(Object.keys(P).length===0){alert('No data!');return;}var sp=Object.keys(P).map(function(k){return[k,P[k]];}).sort(function(a,b){return b[1].points-a[1].points;}),csv='Rank,Player,Matches,Wins,Points,Pts/Match\n';for(var i=0;i<sp.length;i++){var n=sp[i][0],s=sp[i][1],pm=(s.points/s.matches).toFixed(1);csv+=(i+1)+',"'+n+'",'+s.matches+','+s.wins+','+s.points+','+pm+'\n';}var b=new Blob([csv],{type:'text/csv'}),dt=new Date().toISOString().split('T')[0];var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='badminton-'+lg+'-'+dt+'.csv';a.click();}
+        function copyClip(lg){var P=data.pl[lg];if(Object.keys(P).length===0){alert('No data!');return;}var sp=Object.keys(P).map(function(k){return[k,P[k]];}).sort(function(a,b){return b[1].points-a[1].points;}),t='🏸 BADMINTON LEAGUE - '+LG[lg].name+' - Fall 2026\n\nRank | Player | Matches | Wins | Points | Pts/Match\n------|--------|---------|------|--------|----------\n';for(var i=0;i<sp.length;i++){var n=sp[i][0],s=sp[i][1],r=i+1,m=r===1?'🥇':r===2?'🥈':r===3?'🥉':'  ',pm=(s.points/s.matches).toFixed(1);t+=m+' '+r+' | '+n+' | '+s.matches+' | '+s.wins+' | '+s.points+' | '+pm+'\n';}navigator.clipboard.writeText(t).then(function(){alert('✅ Copied!');}).catch(function(){alert('❌ Failed!');});}
+        function updHist(){}
+        load();updBadge();markLate();restoreCurr();
+    </script>
+</body>
+</html>
