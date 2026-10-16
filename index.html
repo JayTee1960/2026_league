@@ -28,6 +28,9 @@
         .players-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .players-grid .form-group { margin-bottom: 0; }
         .late-sel { width: 100%; margin-top: 5px; padding: 6px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.85em; background: white; color: #555; }
+        .form-group .sit-opt { display: flex; align-items: center; gap: 8px; margin: 6px 0 0 0; padding: 7px 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: #fff; color: #555; font-size: 0.9em; font-weight: 600; cursor: pointer; }
+        .form-group .sit-opt input { width: 20px; height: 20px; padding: 0; margin: 0; accent-color: #ffc107; }
+        .form-group .sit-opt.is-late { border-color: #ffc107; background: #fff8e1; color: #333; }
         .late-sel.is-late { border-color: #ffc107; background: #fff8e1; color: #333; font-weight: 600; }
         .schedule-wrapper { background: white; padding: 20px; border-radius: 8px; border: 2px solid #667eea; }
         .schedule-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
@@ -182,7 +185,7 @@
             </div>
             <div class="setup-section">
                 <h3>👥 Players (12)</h3>
-                <p class="setup-note">Enter the 12 players. If someone always arrives late, set their arrival under their name: they sit out the early rounds and still play 6 games. The latest possible arrival is after Round 3. Partners are drawn at random: 9 rounds, 2 courts, 18 games, and everyone plays exactly 6 games (resting 3).</p>
+                <p class="setup-note">Enter the 12 players. Tick <strong>Sit Round 1</strong> under a player's name if they should NOT play Round 1 (for example, they arrive late). They still get exactly 6 games in Rounds 2-9. Up to 4 players can sit Round 1. Partners are drawn at random: 9 rounds, 2 courts, 18 games, and everyone plays exactly 6 games (resting 3).</p>
                 <div class="players-grid" id="playersGrid" onchange="markLate()"></div>
             </div>
             <button class="btn btn-primary" style="width: 100%;" onclick="genSched()">🏸 Generate Schedule</button>
@@ -233,13 +236,12 @@
         /* ---- player inputs (12 individual names, remembered between sessions) ---- */
         (function buildPlayerInputs(){
             var saved=[];try{saved=JSON.parse(localStorage.getItem('bmt26_players')||'[]');}catch(e){}
-            var opts='<option value="1">On time</option><option value="2">Arrives after Rd 1 (~'+clk(1)+')</option><option value="3">Arrives after Rd 2 (~'+clk(2)+')</option><option value="4">Arrives after Rd 3 (~'+clk(3)+')</option>';
-            var h='';for(var i=1;i<=12;i++)h+='<div class="form-group"><label>Player '+i+':</label><input type="text" id="pl'+i+'" placeholder="Player '+i+'" value="'+esc(saved[i-1]||'')+'"><select id="lt'+i+'" class="late-sel" title="When does this player arrive?">'+opts+'</select></div>';
+            var h='';for(var i=1;i<=12;i++)h+='<div class="form-group"><label>Player '+i+':</label><input type="text" id="pl'+i+'" placeholder="Player '+i+'" value="'+esc(saved[i-1]||'')+'"><label class="sit-opt" id="sl'+i+'"><input type="checkbox" id="lt'+i+'"> Sit Round 1</label></div>';
             document.getElementById('playersGrid').innerHTML=h;
         })();
-        function markLate(){for(var i=1;i<=12;i++){var e=document.getElementById('lt'+i);e.classList.toggle('is-late',e.value!=='1');}}
-        function getStarts(){var st={};for(var i=1;i<=12;i++){var n=document.getElementById('pl'+i).value.trim();if(n)st[n]=parseInt(document.getElementById('lt'+i).value);}return st;}
-        function setStarts(pl,late){for(var i=1;i<=12;i++){document.getElementById('lt'+i).value=String((late&&late[pl[i-1]])||1);}markLate();}
+        function markLate(){for(var i=1;i<=12;i++){var e=document.getElementById('lt'+i);document.getElementById('sl'+i).classList.toggle('is-late',e.checked);}}
+        function getStarts(){var st={};for(var i=1;i<=12;i++){var n=document.getElementById('pl'+i).value.trim();if(n)st[n]=document.getElementById('lt'+i).checked?2:1;}return st;}
+        function setStarts(pl,late){for(var i=1;i<=12;i++){document.getElementById('lt'+i).checked=((late&&late[pl[i-1]])||1)>=2;}markLate();}
         function getPlayers(){var p=[];for(var i=1;i<=12;i++)p.push(document.getElementById('pl'+i).value.trim());return p;}
 
         /* ---- random partner scheduler: 12 players, 9 rounds, 2 courts, 6 games each ---- */
@@ -369,8 +371,11 @@
             for(var i=0;i<12;i++)if(!pl[i]){alert('Enter Player '+(i+1)+'!');return;}
             var seen={};for(var i=0;i<12;i++){var k=pl[i].toLowerCase();if(seen[k]){alert('Duplicate name: '+pl[i]);return;}seen[k]=1;}
             try{localStorage.setItem('bmt26_players',JSON.stringify(pl));}catch(e){}
-            var st=getStarts(),rounds=makeSchedule(pl,st,[],true);
-            if(!rounds){alert('Could not build a schedule with those arrival times. Each round needs at least 8 players present, so no more than 4 players can be late.');return;}
+            var st=getStarts(),sitCount=0;for(var k2 in st)if(st[k2]>=2)sitCount++;
+            if(sitCount>4){alert('Only 4 players can sit Round 1 (8 play at a time). Untick '+(sitCount-4)+'.');return;}
+            var rounds=makeSchedule(pl,st,[],true);
+            if(!rounds){alert('Could not build a schedule with those settings. Try again, or untick someone from Sit Round 1.');return;}
+            if(rounds[0]&&rounds[0].late&&rounds[0].late.length){rounds[0].rest=rounds[0].rest.concat(rounds[0].late);rounds[0].late=[];}
             curr={league:lg,date:d,court1:c1,court2:c2,players:pl,late:st,rounds:rounds,matches:[]};editIdx=null;
             dispSched(d,c1,c2,pl,rounds,null);switchTab('record');
         }
