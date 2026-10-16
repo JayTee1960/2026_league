@@ -243,22 +243,26 @@
 
         /* ---- random partner scheduler: 12 players, 9 rounds, 2 courts, 6 games each ---- */
         function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
-        function buildOnce(pl,st,locked,strict){
-            var pc={},oc={},need={},last={},rounds=locked.slice(),cost=0,OPP=[[0,2],[0,3],[1,2],[1,3]];
+       function buildOnce(pl,st,locked,strict){
+            var pc={},oc={},need={},last={},streak={},rounds=locked.slice(),cost=0,OPP=[[0,2],[0,3],[1,2],[1,3]];
             function key(a,b){return a<b?a+'|'+b:b+'|'+a;}
             function addG(g){pc[key(g[0],g[1])]=(pc[key(g[0],g[1])]||0)+1;pc[key(g[2],g[3])]=(pc[key(g[2],g[3])]||0)+1;OPP.forEach(function(q){var k=key(g[q[0]],g[q[1]]);oc[k]=(oc[k]||0)+1;});}
-            pl.forEach(function(p){last[p]=-9;need[p]=6;});
-            locked.forEach(function(rd,ri){rd.games.forEach(function(g){var a=[g.a[0],g.a[1],g.b[0],g.b[1]];a.forEach(function(p){need[p]--;});addG(a);});rd.rest.forEach(function(p){last[p]=ri;});});
+            pl.forEach(function(p){last[p]=-9;need[p]=6;streak[p]=0;});
+            locked.forEach(function(rd,ri){var ps={};rd.games.forEach(function(g){var a=[g.a[0],g.a[1],g.b[0],g.b[1]];a.forEach(function(p){need[p]--;ps[p]=1;});addG(a);});pl.forEach(function(p){streak[p]=ps[p]?streak[p]+1:0;});rd.rest.forEach(function(p){last[p]=ri;});});
             for(var r=locked.length;r<9;r++){
                 var elig=pl.filter(function(p){return (st[p]||1)-1<=r;}),late=pl.filter(function(p){return (st[p]||1)-1>r;});
                 if(elig.length<8)return null;
-                var order=shuffle(elig.slice()).sort(function(a,b){var sa=(9-r)-need[a],sb=(9-r)-need[b];return (sa-sb)||(need[b]-need[a])||((last[b]===r-1?1:0)-(last[a]===r-1?1:0));});
+                function slk(p){return (9-r)-need[p];}
+                var jit={};elig.forEach(function(p){jit[p]=Math.random()*2.5;});
+                function urg(p){return slk(p)+jit[p]+(streak[p]>=2?(streak[p]-1)*3:0);}
+                var order=shuffle(elig.slice()).sort(function(a,b){return ((slk(a)<=0?0:1)-(slk(b)<=0?0:1))||(urg(a)-urg(b))||(need[b]-need[a])||((last[b]===r-1?1:0)-(last[a]===r-1?1:0));});
                 var play=order.slice(0,8),rest=order.slice(8);
                 if(strict){
                     for(var i=0;i<8;i++)if(need[play[i]]<=0)return null;
                     for(var i=0;i<rest.length;i++)if((9-r-1)-need[rest[i]]<0)return null;
                 }
                 play.forEach(function(p){need[p]--;});rest.forEach(function(p){last[p]=r;});
+                pl.forEach(function(p){if(play.indexOf(p)>=0){streak[p]++;if(streak[p]>=3)cost+=50*(streak[p]-2);}else streak[p]=0;});
                 var best=null,bc=1e9;
                 for(var t=0;t<250;t++){
                     var s=shuffle(play.slice()),c=0,gs=[[s[0],s[1],s[2],s[3]],[s[4],s[5],s[6],s[7]]];
@@ -271,8 +275,7 @@
             for(var i=0;i<pl.length;i++){if(strict&&need[pl[i]]!==0)return null;cost+=1000*Math.abs(need[pl[i]]);}
             return {rounds:rounds,cost:cost};
         }
-        function makeSchedule(pl,st,locked,strict){locked=locked||[];var best=null;for(var i=0;i<400;i++){var s=buildOnce(pl,st,locked,strict);if(s&&(!best||s.cost<best.cost))best=s;if(best&&best.cost<=0)break;}return best?best.rounds:null;}
-
+        function makeSchedule(pl,st,locked,strict){locked=locked||[];var best=null;for(var i=0;i<150;i++){var s=buildOnce(pl,st,locked,strict);if(s&&(!best||s.cost<best.cost))best=s;if(best&&best.cost<=0)break;}return best?best.rounds:null;}
         var adjMsg='';
         function firstOpenRound(){if(!curr)return 0;for(var r=0;r<curr.rounds.length;r++){var any=false;for(var g=0;g<2;g++){var a=document.getElementById('g'+(r*2+g+1)+'s1'),b=document.getElementById('g'+(r*2+g+1)+'s2');if((a&&a.value!=='')||(b&&b.value!==''))any=true;}if(!any)return r;}return curr.rounds.length;}
         function toggleAdjust(){var pn=document.getElementById('adjustPanel');if(!curr){alert('Generate a schedule first!');return;}pn.hidden=!pn.hidden;if(!pn.hidden){adjMsg='';buildAdjust();pn.scrollIntoView({behavior:'smooth',block:'nearest'});}}
