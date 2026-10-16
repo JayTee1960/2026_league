@@ -122,30 +122,31 @@
         .bd-controls .btn { font-size: clamp(15px, 3vw, 22px); padding: 14px 24px; }
         @media (max-width: 700px) { .players-grid { grid-template-columns: repeat(2, 1fr); } .games-container { grid-template-columns: 1fr; } .tline { max-width: none; } .team { font-size: 17px; } .team-list { grid-template-columns: repeat(2, 1fr); } }
         @media print {
-            @page { size: landscape; margin: 0.3in; }
+            /* >>> To shrink or grow the printout, change these 3 numbers <<< */
+            :root { --box: 27px; --name: 16px; --gap: 2px; }
+            @page { size: landscape; margin: 0.25in; }
             body { background: white; padding: 0; }
             .container { box-shadow: none; border-radius: 0; overflow: visible; }
             .header, .tabs, .action-buttons, .export-buttons, .week-actions, .results-section, .teams-legend, .adjust-panel, .board { display: none !important; }
             .tab-content { display: none !important; }
             #record.tab-content { display: block !important; padding: 0; }
             .schedule-wrapper { border: none; padding: 0; border-radius: 0; }
-            .schedule-header { margin-bottom: 6px; padding-bottom: 3px; border-bottom: 2px solid #000; }
-            .schedule-header h2 { font-size: 22px !important; color: #000; }
-            .schedule-header h3 { font-size: 13px !important; color: #333; }
-            /* 9 rounds = 3 x 3 grid, sized by content so nothing is cut off */
-            .games-container { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
+            .schedule-header { margin-bottom: 4px; padding-bottom: 2px; border-bottom: 2px solid #000; }
+            .schedule-header h2 { font-size: 18px !important; color: #000; }
+            .schedule-header h3 { font-size: 11px !important; color: #333; margin: 0 !important; }
+            .games-container { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px; }
             .left-column, .right-column { display: contents !important; }
             .rivalry-section { margin: 0 !important; border: 2px solid #000; border-radius: 6px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; min-width: 0; }
-            .rivalry-title { flex-direction: column !important; gap: 0; margin: 0 !important; padding: 3px 8px !important; border-radius: 0 !important; background: #ddd !important; color: #000 !important; font-size: 15px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .rivalry-title .rest { text-align: left !important; font-size: 11px !important; color: #000 !important; opacity: 1 !important; }
-            .game-row { display: grid !important; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 4px; margin: 0 !important; padding: 3px 8px !important; border: 0; border-top: 1px solid #666; border-radius: 0; }
-            .game-number { font-size: 12px !important; min-width: 0 !important; line-height: 1.15; white-space: nowrap; }
-            .court-tag { font-size: 10px !important; color: #333 !important; }
-            .teamlines { display: grid !important; gap: 3px; }
-            .tline { display: grid !important; grid-template-columns: minmax(0, 1fr) 52px !important; column-gap: 6px; align-items: center; max-width: none !important; }
+            .rivalry-title { flex-direction: column !important; gap: 0; margin: 0 !important; padding: 2px 8px !important; border-radius: 0 !important; background: #ddd !important; color: #000 !important; font-size: 14px !important; line-height: 1.15; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .rivalry-title .rest { text-align: left !important; font-size: 10px !important; color: #000 !important; opacity: 1 !important; }
+            .game-row { display: grid !important; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 4px; margin: 0 !important; padding: 2px 8px !important; border: 0; border-top: 1px solid #666; border-radius: 0; }
+            .game-number { font-size: 11px !important; min-width: 0 !important; line-height: 1.1; white-space: nowrap; }
+            .court-tag { font-size: 9px !important; color: #333 !important; }
+            .teamlines { display: grid !important; gap: var(--gap); }
+            .tline { display: grid !important; grid-template-columns: minmax(0, 1fr) 48px !important; column-gap: 6px; align-items: center; max-width: none !important; }
             .tline + .tline::before { content: none !important; }
-            .team { font-size: 18px !important; font-weight: 700 !important; line-height: 1.1; color: #000; }
-            .score-input { width: 52px !important; height: 28px !important; border: 2.5px solid #000 !important; border-radius: 4px; font-size: 20px !important; font-weight: 700 !important; background: #fff !important; color: #000; margin: 0 !important; padding: 0; -moz-appearance: textfield; appearance: textfield; }
+            .team { font-size: var(--name) !important; font-weight: 700 !important; line-height: 1.05; color: #000; }
+            .score-input { width: 48px !important; height: var(--box) !important; border: 2px solid #000 !important; border-radius: 4px; font-size: 18px !important; font-weight: 700 !important; background: #fff !important; color: #000; margin: 0 !important; padding: 0; -moz-appearance: textfield; appearance: textfield; }
             .score-input::-webkit-inner-spin-button, .score-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
             .score-input::placeholder { color: transparent !important; }
         }
@@ -243,7 +244,7 @@
 
         /* ---- random partner scheduler: 12 players, 9 rounds, 2 courts, 6 games each ---- */
         function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
-       function buildOnce(pl,st,locked,strict){
+        function buildOnce(pl,st,locked,strict){
             var pc={},oc={},need={},last={},streak={},rounds=locked.slice(),cost=0,OPP=[[0,2],[0,3],[1,2],[1,3]];
             function key(a,b){return a<b?a+'|'+b:b+'|'+a;}
             function addG(g){pc[key(g[0],g[1])]=(pc[key(g[0],g[1])]||0)+1;pc[key(g[2],g[3])]=(pc[key(g[2],g[3])]||0)+1;OPP.forEach(function(q){var k=key(g[q[0]],g[q[1]]);oc[k]=(oc[k]||0)+1;});}
@@ -276,6 +277,7 @@
             return {rounds:rounds,cost:cost};
         }
         function makeSchedule(pl,st,locked,strict){locked=locked||[];var best=null;for(var i=0;i<150;i++){var s=buildOnce(pl,st,locked,strict);if(s&&(!best||s.cost<best.cost))best=s;if(best&&best.cost<=0)break;}return best?best.rounds:null;}
+
         var adjMsg='';
         function firstOpenRound(){if(!curr)return 0;for(var r=0;r<curr.rounds.length;r++){var any=false;for(var g=0;g<2;g++){var a=document.getElementById('g'+(r*2+g+1)+'s1'),b=document.getElementById('g'+(r*2+g+1)+'s2');if((a&&a.value!=='')||(b&&b.value!==''))any=true;}if(!any)return r;}return curr.rounds.length;}
         function toggleAdjust(){var pn=document.getElementById('adjustPanel');if(!curr){alert('Generate a schedule first!');return;}pn.hidden=!pn.hidden;if(!pn.hidden){adjMsg='';buildAdjust();pn.scrollIntoView({behavior:'smooth',block:'nearest'});}}
